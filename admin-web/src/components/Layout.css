@@ -1,0 +1,151 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+}
+
+.navbar {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-brand h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-logout {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-logout:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.layout-container {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--surface);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  padding: 2rem 0;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 73px);
+  overflow-y: auto;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav a {
+  padding: 1rem 2rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.3s;
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  position: relative;
+}
+
+.sidebar-nav a:hover {
+  background-color: var(--background);
+  color: var(--primary);
+}
+
+.sidebar-nav a.active {
+  background: linear-gradient(90deg, rgba(45, 80, 22, 0.1) 0%, rgba(45, 80, 22, 0.05) 100%);
+  border-left-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.sidebar-badge {
+  background-color: var(--error);
+  color: white;
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  margin-left: auto;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  background-color: var(--background);
+  min-height: calc(100vh - 73px);
+  color: var(--text-primary);
+}
+
+/* White text should only be on dark/gradient backgrounds */
+.main-content .btn-primary,
+.main-content .btn-refresh,
+.main-content .badge-count,
+.main-content .employee-avatar {
+  color: white !important;
+}
+
+/* Icon Styling */
+.sidebar-nav a::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
+.sidebar-nav a[href*="dashboard"]::before {
+  content: '🏠';
+  font-size: 18px;
+}
+
+.sidebar-nav a[href*="employees"]::before {
+  content: '👥';
+  font-size: 18px;
+}
+
+.sidebar-nav a[href*="ip-configuration"]::before {
+  content: '🌐';
+  font-size: 18px;
+}
+
+.sidebar-nav a[href*="leave-management"]::before {
+  content: '📅';
+  font-size: 18px;
+}
