@@ -1,9 +1,10 @@
-const mongoose = require('mongoose');
+// Load environment variables FIRST - before any other imports
 const dotenv = require('dotenv');
+dotenv.config();
+
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { hashPassword } = require('../utils/auth');
-
-dotenv.config();
 
 async function createAdmin() {
   // Validate required environment variables

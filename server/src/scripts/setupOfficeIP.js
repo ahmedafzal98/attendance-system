@@ -1,8 +1,9 @@
-const mongoose = require('mongoose');
+// Load environment variables FIRST - before any other imports
 const dotenv = require('dotenv');
-const IPConfig = require('../models/IPConfig');
-
 dotenv.config();
+
+const mongoose = require('mongoose');
+const IPConfig = require('../models/IPConfig');
 
 async function setupOfficeIP() {
   // Validate required environment variables

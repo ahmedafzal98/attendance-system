@@ -1,6 +1,10 @@
+// Load environment variables FIRST - before any other imports
+// This ensures .env variables are available when modules are required
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const userRoutes = require('./routes/userRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
@@ -9,8 +13,6 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const debugRoutes = require('./routes/debugRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
