@@ -59,14 +59,32 @@ const isIPAllowed = (clientIP, allowedIP, subnet) => {
 
   // If subnet is provided, check CIDR notation
   if (subnet) {
-    // Handle CIDR notation (e.g., "192.168.1.0/24")
+    // Handle CIDR notation (e.g., "/24" or "192.168.1.0/24")
     if (subnet.includes('/')) {
-      const [network, prefixLength] = subnet.split('/');
+      let network = allowedIP; // Default to allowedIP as network
+      let prefixLength = subnet;
+      
+      // If subnet contains full CIDR notation (e.g., "192.168.1.0/24")
+      if (subnet.includes('.') && subnet.includes('/')) {
+        const parts = subnet.split('/');
+        network = parts[0];
+        prefixLength = parts[1];
+      } else if (subnet.startsWith('/')) {
+        // If subnet is just "/24", use allowedIP as network
+        prefixLength = subnet.substring(1); // Remove the leading '/'
+      }
+      
       const mask = parseInt(prefixLength, 10);
 
       if (isNaN(mask) || mask < 0 || mask > 32) {
         console.log(`Invalid CIDR prefix length: ${prefixLength}`);
         return false;
+      }
+
+      // Validate network IP is not empty
+      if (!network || network.trim() === '') {
+        console.log(`Invalid network IP: network is empty, using allowedIP: ${allowedIP}`);
+        network = allowedIP;
       }
 
       return isIPInCIDR(clientIP, network, mask);
