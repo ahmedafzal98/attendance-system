@@ -79,15 +79,22 @@ const checkIn = async (userId, ipAddress) => {
   const expectedCheckInTime = new Date();
   expectedCheckInTime.setHours(9, 0, 0, 0); // 9 AM expected check-in
 
+  // Calculate minutes late or early
+  let minutesLate = 0;
+  let minutesEarly = 0;
+  if (checkInTime > expectedCheckInTime) {
+    // If checked in after 9 AM
+    minutesLate = Math.floor((checkInTime - expectedCheckInTime) / (1000 * 60));
+  } else {
+    // If checked in before 9 AM
+    minutesEarly = Math.floor((expectedCheckInTime - checkInTime) / (1000 * 60));
+  }
+
   // Determine status based on check-in time
   let status = 'PRESENT';
-  if (checkInTime > expectedCheckInTime) {
-    // If checked in after 9 AM, mark as late
-    const minutesLate = Math.floor((checkInTime - expectedCheckInTime) / (1000 * 60));
-    if (minutesLate > 30) {
-      // More than 30 minutes late
-      status = 'LATE';
-    }
+  if (minutesLate > 30) {
+    // More than 30 minutes late
+    status = 'LATE';
   }
 
   if (existingAttendance) {
@@ -98,7 +105,14 @@ const checkIn = async (userId, ipAddress) => {
     };
     existingAttendance.status = status;
     await existingAttendance.save();
-    return existingAttendance;
+    
+    // Add additional info to the response (not saved to DB, just for response)
+    const attendanceObj = existingAttendance.toObject();
+    attendanceObj.minutesLate = minutesLate;
+    attendanceObj.minutesEarly = minutesEarly;
+    attendanceObj.expectedCheckInTime = expectedCheckInTime;
+    attendanceObj.status = status;
+    return attendanceObj;
   } else {
     // Create new attendance record
     const attendance = await Attendance.create({
@@ -110,7 +124,14 @@ const checkIn = async (userId, ipAddress) => {
       },
       status: status,
     });
-    return attendance;
+    
+    // Add additional info to the response (not saved to DB, just for response)
+    const attendanceObj = attendance.toObject();
+    attendanceObj.minutesLate = minutesLate;
+    attendanceObj.minutesEarly = minutesEarly;
+    attendanceObj.expectedCheckInTime = expectedCheckInTime;
+    attendanceObj.status = status;
+    return attendanceObj;
   }
 };
 

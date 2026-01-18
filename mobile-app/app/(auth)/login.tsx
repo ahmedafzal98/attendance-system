@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import AlertModal from '@/components/AlertModal';
 import { BrandColors, BrandSpacing, BrandBorderRadius, BrandShadows } from '@/constants/brand';
 
 export default function LoginScreen() {
@@ -23,8 +25,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,12 +37,25 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const result = await login(email, password);
+    // Pass false to prevent auto-navigation, we'll handle it after showing modal
+    const result = await login(email, password, false);
 
     if (!result.success) {
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
+      setLoading(false);
+    } else {
+      // Show welcome modal after successful login
+      setShowWelcomeModal(true);
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleWelcomeModalClose = () => {
+    setShowWelcomeModal(false);
+    // Navigate to home after modal closes
+    setTimeout(() => {
+      router.replace('/(tabs)');
+    }, 300);
   };
 
   return (
@@ -131,6 +148,16 @@ export default function LoginScreen() {
           </View>
         </View>
       </LinearGradient>
+
+      {/* Welcome Alert Modal */}
+      <AlertModal
+        visible={showWelcomeModal}
+        onClose={handleWelcomeModalClose}
+        type="success"
+        title="Welcome Back!"
+        message={user ? `Hello, ${user.name || user.email}! You have successfully logged in.` : 'You have successfully logged in.'}
+        details="You can now check in/out and manage your attendance."
+      />
     </KeyboardAvoidingView>
   );
 }

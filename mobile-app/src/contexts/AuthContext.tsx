@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, navigateAfterLogin: boolean = true) => {
     try {
       const response = await api.post('/users/login', { email, password });
       const { user, token } = response.data;
@@ -84,10 +84,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(user);
       setToken(token);
 
-      // Navigate immediately after successful login
-      router.replace('/(tabs)');
+      // Navigate only if requested (default: true for backward compatibility)
+      if (navigateAfterLogin) {
+        router.replace('/(tabs)');
+      }
 
-      return { success: true };
+      return { success: true, user, token };
     } catch (error: any) {
       return {
         success: false,

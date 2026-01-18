@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/src/contexts/AuthContext';
 import api from '@/src/services/api';
+import AlertModal from '@/components/AlertModal';
 import { BrandColors, BrandSpacing, BrandBorderRadius, BrandShadows } from '@/constants/brand';
 
 interface TodayAttendance {
@@ -37,6 +38,16 @@ export default function AttendanceScreen() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [alertModal, setAlertModal] = useState({
+    visible: false,
+    type: 'success' as 'success' | 'warning' | 'info' | 'error',
+    title: '',
+    message: '',
+    checkInTime: '',
+    minutesLate: 0,
+    minutesEarly: 0,
+    status: '',
+  });
 
   useEffect(() => {
     fetchTodayAttendance();
@@ -68,10 +79,63 @@ export default function AttendanceScreen() {
 
     setProcessing(true);
     try {
-      await api.post('/attendance/checkin');
-      Alert.alert('Success', 'Checked in successfully!', [
-        { text: 'OK', onPress: () => fetchTodayAttendance() },
-      ]);
+      const response = await api.post('/attendance/checkin');
+      const { attendance, minutesLate, minutesEarly, status } = response.data;
+      
+      const checkInTime = attendance?.checkIn?.time 
+        ? new Date(attendance.checkIn.time).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+      // Determine alert type and message
+      let alertType: 'success' | 'warning' | 'info' | 'error' = 'success';
+      let title = 'Check-In Successful!';
+      let message = 'You have successfully checked in.';
+
+      if (minutesLate && minutesLate > 0) {
+        if (minutesLate <= 5) {
+          alertType = 'warning';
+          title = 'Checked In (Slightly Late)';
+          message = `You checked in ${minutesLate} minute${minutesLate > 1 ? 's' : ''} late.`;
+        } else if (minutesLate <= 15) {
+          alertType = 'warning';
+          title = 'Checked In (Late)';
+          message = `You checked in ${minutesLate} minutes late.`;
+        } else {
+          alertType = 'warning';
+          title = 'Checked In (Very Late)';
+          message = `You checked in ${minutesLate} minutes late.`;
+        }
+      } else if (minutesEarly && minutesEarly > 0) {
+        alertType = 'success';
+        title = 'Checked In (Early)';
+        message = `You checked in ${minutesEarly} minute${minutesEarly > 1 ? 's' : ''} early.`;
+      } else {
+        alertType = 'success';
+        title = 'Checked In (On Time)';
+        message = 'You checked in on time.';
+      }
+
+      setAlertModal({
+        visible: true,
+        type: alertType,
+        title,
+        message,
+        checkInTime,
+        minutesLate: minutesLate || 0,
+        minutesEarly: minutesEarly || 0,
+        status: status || 'PRESENT',
+      });
+
+      // Fetch updated attendance after showing alert
+      setTimeout(() => {
+        fetchTodayAttendance();
+      }, 1000);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||
@@ -96,10 +160,38 @@ export default function AttendanceScreen() {
 
     setProcessing(true);
     try {
-      await api.post('/attendance/checkout');
-      Alert.alert('Success', 'Checked out successfully!', [
-        { text: 'OK', onPress: () => fetchTodayAttendance() },
-      ]);
+      const response = await api.post('/attendance/checkout');
+      const { attendance } = response.data;
+      
+      const checkOutTime = attendance?.checkOut?.time 
+        ? new Date(attendance.checkOut.time).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+      const workingHours = attendance?.workingHours || 0;
+      const hours = Math.floor(workingHours / 60);
+      const minutes = workingHours % 60;
+
+      setAlertModal({
+        visible: true,
+        type: 'success',
+        title: 'Check-Out Successful!',
+        message: `You have successfully checked out. Working hours: ${hours}h ${minutes}m`,
+        checkInTime: checkOutTime,
+        minutesLate: 0,
+        minutesEarly: 0,
+        status: '',
+      });
+
+      // Fetch updated attendance after showing alert
+      setTimeout(() => {
+        fetchTodayAttendance();
+      }, 1000);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||
@@ -322,6 +414,19 @@ export default function AttendanceScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertModal.visible}
+        onClose={() => setAlertModal({ ...alertModal, visible: false })}
+        type={alertModal.type}
+        title={alertModal.title}
+        message={alertModal.message}
+        checkInTime={alertModal.checkInTime}
+        minutesLate={alertModal.minutesLate}
+        minutesEarly={alertModal.minutesEarly}
+        status={alertModal.status}
+      />
     </ScrollView>
   );
 }

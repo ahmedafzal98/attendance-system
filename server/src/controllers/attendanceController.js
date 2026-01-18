@@ -20,6 +20,10 @@ const checkInEmployee = async (req, res) => {
     res.status(200).json({
       message: 'Checked in successfully',
       attendance: attendance,
+      minutesLate: attendance.minutesLate || 0,
+      minutesEarly: attendance.minutesEarly || 0,
+      status: attendance.status,
+      expectedCheckInTime: attendance.expectedCheckInTime,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to check in';
