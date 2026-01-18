@@ -31,12 +31,19 @@ if (!API_BASE_URL || (__DEV__ && API_BASE_URL.includes('192.168.1.100'))) {
  */
 const getLocalIPAddress = async (): Promise<string | null> => {
   try {
+    if (!Network) {
+      console.warn('expo-network not available. Private IP detection disabled.');
+      return null;
+    }
+    
     const ipAddress = await Network.getIpAddressAsync();
     // getIpAddressAsync returns private IP if on WiFi (e.g., "192.168.18.7")
     // Returns "unknown" if not available
     if (ipAddress && ipAddress !== 'unknown') {
+      console.log('Detected private IP:', ipAddress);
       return ipAddress;
     }
+    console.warn('Private IP detection returned unknown or empty:', ipAddress);
     return null;
   } catch (error) {
     console.error('Error getting local IP address:', error);
@@ -66,7 +73,20 @@ api.interceptors.request.use(
       // This allows the server to validate the private IP even when connecting through public internet
       const localIP = await getLocalIPAddress();
       if (localIP) {
+        // Try header first (may be stripped by proxy)
         config.headers['X-Client-Local-IP'] = localIP;
+        config.headers['x-client-local-ip'] = localIP; // lowercase version
+        console.log('✅ Setting X-Client-Local-IP header:', localIP);
+        
+        // Also add to request body as fallback (in case proxy strips headers)
+        // This works for POST/PUT/PATCH requests
+        if (config.data && typeof config.data === 'object' && !Array.isArray(config.data)) {
+          config.data.clientIP = localIP;
+          config.data.localIP = localIP; // alternative field name
+          console.log('✅ Also added IP to request body as fallback:', localIP);
+        }
+      } else {
+        console.warn('⚠️ No local IP detected, header not set');
       }
     } catch (error) {
       console.error('Error in request interceptor:', error);
