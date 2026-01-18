@@ -1,5 +1,6 @@
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
+const WorkSchedule = require('../models/WorkSchedule');
 
 /**
  * Get today's date at midnight for comparison
@@ -76,24 +77,40 @@ const checkIn = async (userId, ipAddress) => {
   }
 
   const checkInTime = new Date();
+  
+  // Get employee's work schedule
+  let workSchedule = await WorkSchedule.findOne({ user: userId, isActive: true });
+  
+  // If no schedule exists, create default one (9 AM - 6 PM, 30 min grace)
+  if (!workSchedule) {
+    workSchedule = await WorkSchedule.create({
+      user: userId,
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      gracePeriod: 30,
+    });
+  }
+
+  // Parse check-in time from schedule (format: "HH:MM")
+  const [checkInHour, checkInMinute] = workSchedule.checkInTime.split(':').map(Number);
   const expectedCheckInTime = new Date();
-  expectedCheckInTime.setHours(9, 0, 0, 0); // 9 AM expected check-in
+  expectedCheckInTime.setHours(checkInHour, checkInMinute, 0, 0);
 
   // Calculate minutes late or early
   let minutesLate = 0;
   let minutesEarly = 0;
   if (checkInTime > expectedCheckInTime) {
-    // If checked in after 9 AM
+    // If checked in after expected time
     minutesLate = Math.floor((checkInTime - expectedCheckInTime) / (1000 * 60));
   } else {
-    // If checked in before 9 AM
+    // If checked in before expected time
     minutesEarly = Math.floor((expectedCheckInTime - checkInTime) / (1000 * 60));
   }
 
-  // Determine status based on check-in time
+  // Determine status based on check-in time and grace period
   let status = 'PRESENT';
-  if (minutesLate > 30) {
-    // More than 30 minutes late
+  if (minutesLate > workSchedule.gracePeriod) {
+    // More than grace period minutes late
     status = 'LATE';
   }
 
@@ -290,6 +307,149 @@ const markAbsent = async (userId, date, notes) => {
   return attendance;
 };
 
+/**
+ * Manual check in employee (admin bypasses IP validation)
+ * Used when employee has issues with mobile app (slow internet, app crash, etc.)
+ */
+const manualCheckIn = async (userId, adminId) => {
+  const todayStart = getTodayStart();
+  const todayEnd = getTodayEnd();
+
+  // Check if already checked in today
+  const existingAttendance = await Attendance.findOne({
+    user: userId,
+    date: {
+      $gte: todayStart,
+      $lte: todayEnd,
+    },
+  });
+
+  if (existingAttendance && existingAttendance.checkIn?.time) {
+    throw new Error('Employee has already checked in today');
+  }
+
+  const checkInTime = new Date();
+  
+  // Get employee's work schedule
+  let workSchedule = await WorkSchedule.findOne({ user: userId, isActive: true });
+  
+  // If no schedule exists, create default one (9 AM - 6 PM, 30 min grace)
+  if (!workSchedule) {
+    workSchedule = await WorkSchedule.create({
+      user: userId,
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      gracePeriod: 30,
+    });
+  }
+
+  // Parse check-in time from schedule (format: "HH:MM")
+  const [checkInHour, checkInMinute] = workSchedule.checkInTime.split(':').map(Number);
+  const expectedCheckInTime = new Date();
+  expectedCheckInTime.setHours(checkInHour, checkInMinute, 0, 0);
+
+  // Calculate minutes late or early
+  let minutesLate = 0;
+  let minutesEarly = 0;
+  if (checkInTime > expectedCheckInTime) {
+    minutesLate = Math.floor((checkInTime - expectedCheckInTime) / (1000 * 60));
+  } else {
+    minutesEarly = Math.floor((expectedCheckInTime - checkInTime) / (1000 * 60));
+  }
+
+  // Determine status based on check-in time and grace period
+  let status = 'PRESENT';
+  if (minutesLate > workSchedule.gracePeriod) {
+    status = 'LATE';
+  }
+
+  if (existingAttendance) {
+    // Update existing attendance record
+    existingAttendance.checkIn = {
+      time: checkInTime,
+      ipAddress: 'MANUAL_BY_ADMIN',
+    };
+    existingAttendance.status = status;
+    await existingAttendance.save();
+    
+    const attendanceObj = existingAttendance.toObject();
+    attendanceObj.minutesLate = minutesLate;
+    attendanceObj.minutesEarly = minutesEarly;
+    attendanceObj.expectedCheckInTime = expectedCheckInTime;
+    attendanceObj.status = status;
+    return attendanceObj;
+  } else {
+    // Create new attendance record
+    const attendance = await Attendance.create({
+      user: userId,
+      date: checkInTime,
+      checkIn: {
+        time: checkInTime,
+        ipAddress: 'MANUAL_BY_ADMIN',
+      },
+      status: status,
+    });
+    
+    const attendanceObj = attendance.toObject();
+    attendanceObj.minutesLate = minutesLate;
+    attendanceObj.minutesEarly = minutesEarly;
+    attendanceObj.expectedCheckInTime = expectedCheckInTime;
+    attendanceObj.status = status;
+    return attendanceObj;
+  }
+};
+
+/**
+ * Manual check out employee (admin bypasses IP validation)
+ * Used when employee has issues with mobile app
+ */
+const manualCheckOut = async (userId, adminId) => {
+  const todayStart = getTodayStart();
+  const todayEnd = getTodayEnd();
+
+  // Find today's attendance
+  const attendance = await Attendance.findOne({
+    user: userId,
+    date: {
+      $gte: todayStart,
+      $lte: todayEnd,
+    },
+  });
+
+  if (!attendance) {
+    throw new Error('Employee must check in before checking out. Please check them in first.');
+  }
+
+  if (!attendance.checkIn?.time) {
+    throw new Error('Employee must check in before checking out. Please check them in first.');
+  }
+
+  if (attendance.checkOut?.time) {
+    throw new Error('Employee has already checked out today');
+  }
+
+  const checkOutTime = new Date();
+  const checkInTime = attendance.checkIn.time;
+
+  // Calculate working hours in minutes
+  const workingMinutes = Math.floor((checkOutTime - checkInTime) / (1000 * 60));
+
+  attendance.checkOut = {
+    time: checkOutTime,
+    ipAddress: 'MANUAL_BY_ADMIN',
+  };
+  attendance.workingHours = workingMinutes;
+
+  // Update status based on working hours
+  if (workingMinutes < 240) {
+    // Less than 4 hours = half day
+    attendance.status = 'HALF_DAY';
+  }
+
+  await attendance.save();
+  return attendance;
+};
+
 module.exports = {
   checkIn,
   checkOut,
@@ -299,5 +459,7 @@ module.exports = {
   markAbsent,
   hasCheckedInToday,
   hasCheckedOutToday,
+  manualCheckIn,
+  manualCheckOut,
 };
 

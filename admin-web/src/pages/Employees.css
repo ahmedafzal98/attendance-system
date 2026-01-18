@@ -264,3 +264,113 @@
   font-size: 0.875rem;
   margin-top: 0.5rem;
 }
+
+/* Manual Check-In/Check-Out Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-checkin {
+  background-color: #27AE60;
+  color: white;
+  box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3);
+}
+
+.btn-checkin:hover:not(:disabled) {
+  background-color: #229954;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.4);
+}
+
+.btn-checkout {
+  background-color: #E74C3C;
+  color: white;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+.btn-checkout:hover:not(:disabled) {
+  background-color: #C0392B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+}
+
+.btn-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-password {
+  background-color: #3498DB;
+  color: white;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.btn-password:hover:not(:disabled) {
+  background-color: #2980B9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-edit {
+  background-color: #3498DB;
+  color: white;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.btn-edit:hover:not(:disabled) {
+  background-color: #2980B9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+}
+
+.btn-delete {
+  background-color: #E74C3C;
+  color: white;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #C0392B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+}
+
+.btn-delete-confirm {
+  background-color: #E74C3C;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+.btn-delete-confirm:hover {
+  background-color: #C0392B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+}

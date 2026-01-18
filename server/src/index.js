@@ -12,6 +12,7 @@ const ipConfigRoutes = require('./routes/ipConfigRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const debugRoutes = require('./routes/debugRoutes');
+const workScheduleRoutes = require('./routes/workScheduleRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -63,6 +64,7 @@ app.use('/api/ip-config', ipConfigRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/work-schedules', workScheduleRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

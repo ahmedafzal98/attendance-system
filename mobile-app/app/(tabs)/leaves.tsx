@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMyLeaves, getMyLeaveStats, deleteLeaveRequest, LeaveRequest, LeaveStats } from '@/src/services/leaveService';
+import AlertModal from '@/components/AlertModal';
 import { BrandColors, BrandSpacing, BrandBorderRadius, BrandShadows } from '@/constants/brand';
 
 export default function LeavesScreen() {
@@ -23,6 +23,9 @@ export default function LeavesScreen() {
   const [stats, setStats] = useState<LeaveStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
+  const [successModal, setSuccessModal] = useState({ visible: false, message: '' });
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({ visible: false, leaveId: '', leaveType: '' });
 
   useEffect(() => {
     fetchData();
@@ -38,7 +41,10 @@ export default function LeavesScreen() {
       setStats(statsData);
     } catch (error) {
       console.error('Error fetching leave data:', error);
-      Alert.alert('Error', 'Failed to load leave requests');
+      setErrorModal({
+        visible: true,
+        message: 'Failed to load leave requests',
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -50,27 +56,30 @@ export default function LeavesScreen() {
     fetchData();
   };
 
-  const handleDelete = async (leaveId: string) => {
-    Alert.alert(
-      'Delete Leave Request',
-      'Are you sure you want to delete this leave request?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteLeaveRequest(leaveId);
-              Alert.alert('Success', 'Leave request deleted');
-              fetchData();
-            } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.error || 'Failed to delete leave request');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = (leave: LeaveRequest) => {
+    setDeleteConfirmModal({
+      visible: true,
+      leaveId: leave.id,
+      leaveType: leave.leaveType,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteLeaveRequest(deleteConfirmModal.leaveId);
+      setDeleteConfirmModal({ visible: false, leaveId: '', leaveType: '' });
+      setSuccessModal({
+        visible: true,
+        message: 'Leave request deleted successfully',
+      });
+      fetchData();
+    } catch (error: any) {
+      setDeleteConfirmModal({ visible: false, leaveId: '', leaveType: '' });
+      setErrorModal({
+        visible: true,
+        message: error.response?.data?.error || 'Failed to delete leave request',
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -308,7 +317,7 @@ export default function LeavesScreen() {
               {leave.status === 'PENDING' && (
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => handleDelete(leave.id)}
+                  onPress={() => handleDelete(leave)}
                   activeOpacity={0.7}
                 >
                   <Ionicons name="trash-outline" size={18} color={BrandColors.error} />
@@ -319,6 +328,61 @@ export default function LeavesScreen() {
           ))
         )}
       </View>
+
+      {/* Error Modal */}
+      <AlertModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal({ visible: false, message: '' })}
+        type="error"
+        title="Error"
+        message={errorModal.message}
+        showRemarks={false}
+      />
+
+      {/* Success Modal */}
+      <AlertModal
+        visible={successModal.visible}
+        onClose={() => setSuccessModal({ visible: false, message: '' })}
+        type="success"
+        title="Success"
+        message={successModal.message}
+        showRemarks={false}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <AlertModal
+        visible={deleteConfirmModal.visible}
+        onClose={() => setDeleteConfirmModal({ visible: false, leaveId: '', leaveType: '' })}
+        type="error"
+        title="Delete Leave Request"
+        message={`Are you sure you want to delete this ${deleteConfirmModal.leaveType} leave request?`}
+        showRemarks={false}
+      >
+        <View style={{ marginTop: 16, gap: 12 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              padding: 12,
+              borderRadius: 8,
+              alignItems: 'center',
+            }}
+            onPress={() => setDeleteConfirmModal({ visible: false, leaveId: '', leaveType: '' })}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#E74C3C',
+              padding: 12,
+              borderRadius: 8,
+              alignItems: 'center',
+            }}
+            onPress={handleDeleteConfirm}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      </AlertModal>
     </ScrollView>
   );
 }

@@ -7,6 +7,8 @@ const {
   updateStatus,
   markEmployeeAbsent,
   getUserAttendanceRecords,
+  manualCheckInEmployee,
+  manualCheckOutEmployee,
 } = require('../controllers/attendanceController');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { validateOfficeIP } = require('../middleware/ipValidator');
@@ -23,5 +25,8 @@ router.get('/my-attendance', authenticate, getMyAttendance);
 router.put('/:attendanceId/status', authenticate, requireAdmin, updateStatus);
 router.post('/:userId/absent', authenticate, requireAdmin, markEmployeeAbsent);
 router.get('/user/:userId', authenticate, requireAdmin, getUserAttendanceRecords);
+// Manual check-in/check-out (bypasses IP validation)
+router.post('/admin/checkin/:userId', authenticate, requireAdmin, manualCheckInEmployee);
+router.post('/admin/checkout/:userId', authenticate, requireAdmin, manualCheckOutEmployee);
 
 module.exports = router;

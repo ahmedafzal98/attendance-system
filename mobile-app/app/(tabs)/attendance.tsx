@@ -48,6 +48,7 @@ export default function AttendanceScreen() {
     minutesEarly: 0,
     status: '',
   });
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
 
   useEffect(() => {
     fetchTodayAttendance();
@@ -73,7 +74,10 @@ export default function AttendanceScreen() {
 
   const handleCheckIn = async () => {
     if (todayAttendance?.checkIn?.time) {
-      Alert.alert('Already Checked In', 'You have already checked in today.');
+      setErrorModal({
+        visible: true,
+        message: 'You have already checked in today.',
+      });
       return;
     }
 
@@ -141,7 +145,10 @@ export default function AttendanceScreen() {
         error.response?.data?.error ||
         error.response?.data?.message ||
         'Failed to check in. Please make sure you are connected to office WiFi.';
-      Alert.alert('Check In Failed', errorMessage);
+      setErrorModal({
+        visible: true,
+        message: errorMessage,
+      });
     } finally {
       setProcessing(false);
     }
@@ -149,12 +156,18 @@ export default function AttendanceScreen() {
 
   const handleCheckOut = async () => {
     if (!todayAttendance?.checkIn?.time) {
-      Alert.alert('Error', 'You must check in before checking out.');
+      setErrorModal({
+        visible: true,
+        message: 'You must check in before checking out.',
+      });
       return;
     }
 
     if (todayAttendance?.checkOut?.time) {
-      Alert.alert('Already Checked Out', 'You have already checked out today.');
+      setErrorModal({
+        visible: true,
+        message: 'You have already checked out today.',
+      });
       return;
     }
 
@@ -197,7 +210,10 @@ export default function AttendanceScreen() {
         error.response?.data?.error ||
         error.response?.data?.message ||
         'Failed to check out. Please make sure you are connected to office WiFi.';
-      Alert.alert('Check Out Failed', errorMessage);
+      setErrorModal({
+        visible: true,
+        message: errorMessage,
+      });
     } finally {
       setProcessing(false);
     }
@@ -415,7 +431,7 @@ export default function AttendanceScreen() {
         </View>
       </View>
 
-      {/* Alert Modal */}
+      {/* Success/Warning Alert Modal (Check-in/Check-out) */}
       <AlertModal
         visible={alertModal.visible}
         onClose={() => setAlertModal({ ...alertModal, visible: false })}
@@ -426,6 +442,15 @@ export default function AttendanceScreen() {
         minutesLate={alertModal.minutesLate}
         minutesEarly={alertModal.minutesEarly}
         status={alertModal.status}
+      />
+
+      {/* Error Modal */}
+      <AlertModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal({ visible: false, message: '' })}
+        type="error"
+        title="Error"
+        message={errorModal.message}
       />
     </ScrollView>
   );

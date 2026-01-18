@@ -24,6 +24,8 @@ interface AlertModalProps {
   minutesEarly?: number;
   status?: string;
   remark?: string;
+  children?: React.ReactNode;
+  showRemarks?: boolean; // Control whether to show remarks section
 }
 
 const { width } = Dimensions.get('window');
@@ -40,6 +42,8 @@ export default function AlertModal({
   minutesEarly,
   status,
   remark,
+  children,
+  showRemarks = true, // Default to true for backward compatibility
 }: AlertModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -181,25 +185,33 @@ export default function AlertModal({
                 <Text style={styles.details}>{details}</Text>
               )}
 
-              <View style={styles.remarkBox}>
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.remark}>{getRemark()}</Text>
-              </View>
+              {remark && showRemarks && (
+                <View style={styles.remarkBox}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.remark}>{getRemark()}</Text>
+                </View>
+              )}
             </View>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onClose}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)']}
-                style={styles.buttonGradient}
+            {children ? (
+              <View style={styles.childrenContainer}>
+                {children}
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onClose}
+                activeOpacity={0.8}
               >
-                <Text style={styles.buttonText}>OK</Text>
-                <Ionicons name="checkmark" size={20} color="#fff" />
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)']}
+                  style={styles.buttonGradient}
+                >
+                  <Text style={styles.buttonText}>OK</Text>
+                  <Ionicons name="checkmark" size={20} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </LinearGradient>
         </Animated.View>
       </View>

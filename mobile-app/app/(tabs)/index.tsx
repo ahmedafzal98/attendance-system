@@ -6,9 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import AlertModal from '@/components/AlertModal';
 import { LinearGradient } from 'expo-linear-gradient';
 // If expo-linear-gradient is not installed, the app will still work but gradients won't display
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [logoutModal, setLogoutModal] = useState({ visible: false });
 
   useEffect(() => {
     fetchTodayAttendance();
@@ -63,18 +64,12 @@ export default function HomeScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ]
-    );
+    setLogoutModal({ visible: true });
+  };
+
+  const handleLogoutConfirm = () => {
+    setLogoutModal({ visible: false });
+    logout();
   };
 
   const formatTime = (dateString: string) => {
@@ -247,6 +242,41 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
+
+      {/* Logout Confirmation Modal */}
+      <AlertModal
+        visible={logoutModal.visible}
+        onClose={() => setLogoutModal({ visible: false })}
+        type="warning"
+        title="Logout"
+        message="Are you sure you want to logout?"
+        showRemarks={false}
+      >
+        <View style={{ marginTop: 16, gap: 12 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              padding: 12,
+              borderRadius: 8,
+              alignItems: 'center',
+            }}
+            onPress={() => setLogoutModal({ visible: false })}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#E74C3C',
+              padding: 12,
+              borderRadius: 8,
+              alignItems: 'center',
+            }}
+            onPress={handleLogoutConfirm}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </AlertModal>
     </ScrollView>
   );
 }

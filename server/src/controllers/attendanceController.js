@@ -5,6 +5,8 @@ const {
   getUserAttendance,
   updateAttendanceStatus,
   markAbsent,
+  manualCheckIn,
+  manualCheckOut,
 } = require('../services/attendanceService');
 
 /**
@@ -155,6 +157,48 @@ const getUserAttendanceRecords = async (req, res) => {
   }
 };
 
+/**
+ * Manual check in employee (Admin only - bypasses IP validation)
+ * Used when employee has issues with mobile app (slow internet, app crash, etc.)
+ */
+const manualCheckInEmployee = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user.id;
+
+    const attendance = await manualCheckIn(userId, adminId);
+
+    res.status(200).json({
+      message: 'Employee checked in successfully (manual)',
+      attendance: attendance,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to check in employee';
+    res.status(400).json({ error: errorMessage });
+  }
+};
+
+/**
+ * Manual check out employee (Admin only - bypasses IP validation)
+ * Used when employee has issues with mobile app
+ */
+const manualCheckOutEmployee = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user.id;
+
+    const attendance = await manualCheckOut(userId, adminId);
+
+    res.status(200).json({
+      message: 'Employee checked out successfully (manual)',
+      attendance: attendance,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to check out employee';
+    res.status(400).json({ error: errorMessage });
+  }
+};
+
 module.exports = {
   checkInEmployee,
   checkOutEmployee,
@@ -163,5 +207,7 @@ module.exports = {
   updateStatus,
   markEmployeeAbsent,
   getUserAttendanceRecords,
+  manualCheckInEmployee,
+  manualCheckOutEmployee,
 };
 

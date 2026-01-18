@@ -26,13 +26,17 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
   const insets = useSafeAreaInsets();
   const { login, user } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      setErrorModal({
+        visible: true,
+        message: 'Please enter both email and password',
+      });
       return;
     }
 
@@ -41,7 +45,10 @@ export default function LoginScreen() {
     const result = await login(email, password, false);
 
     if (!result.success) {
-      Alert.alert('Login Failed', result.error || 'Invalid credentials');
+      setErrorModal({
+        visible: true,
+        message: result.error || 'Invalid credentials',
+      });
       setLoading(false);
     } else {
       // Show welcome modal after successful login
@@ -156,7 +163,16 @@ export default function LoginScreen() {
         type="success"
         title="Welcome Back!"
         message={user ? `Hello, ${user.name || user.email}! You have successfully logged in.` : 'You have successfully logged in.'}
-        details="You can now check in/out and manage your attendance."
+        showRemarks={false}
+      />
+
+      {/* Error Modal */}
+      <AlertModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal({ visible: false, message: '' })}
+        type="error"
+        title="Login Failed"
+        message={errorModal.message}
       />
     </KeyboardAvoidingView>
   );

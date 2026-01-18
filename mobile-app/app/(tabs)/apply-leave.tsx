@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createLeaveRequest, CreateLeaveData } from '@/src/services/leaveService';
+import AlertModal from '@/components/AlertModal';
 import { BrandColors, BrandSpacing, BrandBorderRadius, BrandShadows } from '@/constants/brand';
 
 const LEAVE_TYPES = [
@@ -39,6 +39,8 @@ export default function ApplyLeaveScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
+  const [successModal, setSuccessModal] = useState({ visible: false, message: '' });
 
   // Format date to YYYY-MM-DD for backend
   const formatDateForBackend = (date: Date): string => {
@@ -106,7 +108,10 @@ export default function ApplyLeaveScreen() {
   const handleSubmit = async () => {
     console.log("handleSubmit",formData);
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix the errors in the form');
+      setErrorModal({
+        visible: true,
+        message: 'Please fix the errors in the form',
+      });
       return;
     }
 
@@ -115,19 +120,25 @@ export default function ApplyLeaveScreen() {
       console.log(formData);
       
       await createLeaveRequest(formData);
-      Alert.alert('Success', 'Leave request submitted successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      setSuccessModal({
+        visible: true,
+        message: 'Leave request submitted successfully!',
+      });
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error || 'Failed to submit leave request';
-      Alert.alert('Error', errorMessage);
+      setErrorModal({
+        visible: true,
+        message: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setSuccessModal({ visible: false, message: '' });
+    router.back();
   };
 
   const calculateDays = () => {
