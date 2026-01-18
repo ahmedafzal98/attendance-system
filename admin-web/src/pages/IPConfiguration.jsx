@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { AlertModal, ConfirmModal } from '../components/Modal'
 import './IPConfiguration.css'
 
 const IPConfiguration = () => {
@@ -16,6 +17,10 @@ const IPConfiguration = () => {
     isActive: true,
   })
   const [formError, setFormError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingConfig, setDeletingConfig] = useState(null)
+  const [alertModal, setAlertModal] = useState({ isOpen: false, type: 'success', title: '', message: '' })
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: 'warning', title: '', message: '', onConfirm: null })
 
   useEffect(() => {
     fetchIPConfigs()
@@ -60,17 +65,32 @@ const IPConfiguration = () => {
       return
     }
 
+    setSubmitting(true)
     try {
       if (editingConfig) {
         await api.put(`/ip-config/${editingConfig.id}`, formData)
+        setAlertModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'IP configuration updated successfully!',
+        })
       } else {
         await api.post('/ip-config', formData)
+        setAlertModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'IP configuration created successfully!',
+        })
       }
       setShowModal(false)
       resetForm()
-      fetchIPConfigs()
+      await fetchIPConfigs()
     } catch (err) {
       setFormError(err.response?.data?.error || 'Failed to save IP configuration')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -86,17 +106,36 @@ const IPConfiguration = () => {
     setShowModal(true)
   }
 
-  const handleDelete = async (configId) => {
-    if (!window.confirm('Are you sure you want to delete this IP configuration?')) {
-      return
-    }
-
-    try {
-      await api.delete(`/ip-config/${configId}`)
-      fetchIPConfigs()
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete IP configuration')
-    }
+  const handleDelete = (config) => {
+    setDeletingConfig(config)
+    setConfirmModal({
+      isOpen: true,
+      type: 'warning',
+      title: 'Delete IP Configuration',
+      message: `Are you sure you want to delete "${config.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false })
+        try {
+          await api.delete(`/ip-config/${config.id}`)
+          setAlertModal({
+            isOpen: true,
+            type: 'success',
+            title: 'Success',
+            message: 'IP configuration deleted successfully!',
+          })
+          await fetchIPConfigs()
+        } catch (err) {
+          setAlertModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: err.response?.data?.error || 'Failed to delete IP configuration',
+          })
+        } finally {
+          setDeletingConfig(null)
+        }
+      },
+    })
   }
 
   const handleToggleActive = async (config) => {
@@ -311,6 +350,25 @@ const IPConfiguration = () => {
           </div>
         </div>
       )}
+
+      {/* Alert Modal for Success/Error Messages */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        type={alertModal.type}
+        title={alertModal.title}
+        message={alertModal.message}
+      />
+
+      {/* Confirm Modal for Actions */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm || (() => {})}
+        type={confirmModal.type}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   )
 }

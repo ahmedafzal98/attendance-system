@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { AlertModal, ConfirmModal } from '../components/Modal'
 import './Employees.css'
 
 const Employees = () => {
@@ -29,6 +30,11 @@ const Employees = () => {
   const [editFormError, setEditFormError] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
+  const [alertModal, setAlertModal] = useState({ isOpen: false, type: 'success', title: '', message: '' })
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: 'warning', title: '', message: '', onConfirm: null })
+  const [submitting, setSubmitting] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   useEffect(() => {
     fetchEmployees()
@@ -94,39 +100,69 @@ const Employees = () => {
   }
 
   const handleManualCheckIn = async (employeeId, employeeName) => {
-    if (!window.confirm(`Manually check in ${employeeName}? This will bypass IP validation.`)) {
-      return
-    }
-
-    setProcessingAttendance({ ...processingAttendance, [`checkin_${employeeId}`]: true })
-    try {
-      const response = await api.post(`/attendance/admin/checkin/${employeeId}`)
-      alert(`✓ ${employeeName} checked in successfully!`)
-      // Refresh employees list and attendance data
-      await fetchEmployees()
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to check in employee')
-    } finally {
-      setProcessingAttendance({ ...processingAttendance, [`checkin_${employeeId}`]: false })
-    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'warning',
+      title: 'Manual Check In',
+      message: `Manually check in ${employeeName}? This will bypass IP validation.`,
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false })
+        setProcessingAttendance({ ...processingAttendance, [`checkin_${employeeId}`]: true })
+        try {
+          const response = await api.post(`/attendance/admin/checkin/${employeeId}`)
+          setAlertModal({
+            isOpen: true,
+            type: 'success',
+            title: 'Success',
+            message: `${employeeName} checked in successfully!`,
+          })
+          // Refresh employees list and attendance data
+          await fetchEmployees()
+        } catch (err) {
+          setAlertModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: err.response?.data?.error || 'Failed to check in employee',
+          })
+        } finally {
+          setProcessingAttendance({ ...processingAttendance, [`checkin_${employeeId}`]: false })
+        }
+      },
+    })
   }
 
   const handleManualCheckOut = async (employeeId, employeeName) => {
-    if (!window.confirm(`Manually check out ${employeeName}? This will bypass IP validation.`)) {
-      return
-    }
-
-    setProcessingAttendance({ ...processingAttendance, [`checkout_${employeeId}`]: true })
-    try {
-      const response = await api.post(`/attendance/admin/checkout/${employeeId}`)
-      alert(`✓ ${employeeName} checked out successfully!`)
-      // Refresh employees list and attendance data
-      await fetchEmployees()
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to check out employee')
-    } finally {
-      setProcessingAttendance({ ...processingAttendance, [`checkout_${employeeId}`]: false })
-    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'warning',
+      title: 'Manual Check Out',
+      message: `Manually check out ${employeeName}? This will bypass IP validation.`,
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false })
+        setProcessingAttendance({ ...processingAttendance, [`checkout_${employeeId}`]: true })
+        try {
+          const response = await api.post(`/attendance/admin/checkout/${employeeId}`)
+          setAlertModal({
+            isOpen: true,
+            type: 'success',
+            title: 'Success',
+            message: `${employeeName} checked out successfully!`,
+          })
+          // Refresh employees list and attendance data
+          await fetchEmployees()
+        } catch (err) {
+          setAlertModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: err.response?.data?.error || 'Failed to check out employee',
+          })
+        } finally {
+          setProcessingAttendance({ ...processingAttendance, [`checkout_${employeeId}`]: false })
+        }
+      },
+    })
   }
 
   const formatTime = (dateString) => {
@@ -197,6 +233,7 @@ const Employees = () => {
       return
     }
 
+    setResettingPassword(true)
     try {
       const response = await api.post(
         `/users/employees/${selectedEmployee.id}/reset-password`,
@@ -205,6 +242,8 @@ const Employees = () => {
       setPasswordResetSuccess(response.data)
     } catch (err) {
       setPasswordError(err.response?.data?.error || 'Failed to reset password')
+    } finally {
+      setResettingPassword(false)
     }
   }
 
@@ -258,6 +297,7 @@ const Employees = () => {
       return
     }
 
+    setEditing(true)
     try {
       const updateData = {
         name: editFormData.name,
@@ -273,9 +313,17 @@ const Employees = () => {
       setShowEditModal(false)
       setSelectedEmployee(null)
       setEditFormData({ name: '', email: '', password: '' })
-      fetchEmployees()
+      setAlertModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Employee updated successfully!',
+      })
+      await fetchEmployees()
     } catch (err) {
       setEditFormError(err.response?.data?.error || 'Failed to update employee')
+    } finally {
+      setEditing(false)
     }
   }
 
@@ -295,13 +343,24 @@ const Employees = () => {
     if (!employeeToDelete) return
 
     try {
+      const employeeName = employeeToDelete.name
       await api.delete(`/users/employees/${employeeToDelete.id}`)
       setShowDeleteModal(false)
       setEmployeeToDelete(null)
-      fetchEmployees()
-      alert(`Employee ${employeeToDelete.name} deleted successfully!`)
+      setAlertModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: `Employee ${employeeName} deleted successfully!`,
+      })
+      await fetchEmployees()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete employee')
+      setAlertModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.error || 'Failed to delete employee',
+      })
     }
   }
 
@@ -333,13 +392,22 @@ const Employees = () => {
       return
     }
 
+    setSubmitting(true)
     try {
       await api.post('/users/employees', formData)
       setShowModal(false)
       setFormData({ name: '', email: '', password: '' })
-      fetchEmployees()
+      setAlertModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Employee created successfully!',
+      })
+      await fetchEmployees()
     } catch (err) {
       setFormError(err.response?.data?.error || 'Failed to create employee')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -487,7 +555,7 @@ const Employees = () => {
                           🗑️ Delete
                         </button>
                       </div>
-                    </td>
+                  </td>
                 </tr>
                 )
               })}
@@ -552,8 +620,15 @@ const Employees = () => {
                 <button type="button" className="btn-secondary" onClick={handleCloseModal}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Create Employee
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <span className="loading-spinner"></span>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Employee'
+                  )}
                 </button>
               </div>
             </form>
@@ -673,8 +748,15 @@ const Employees = () => {
                   <button type="button" className="btn-secondary" onClick={handleClosePasswordModal}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary">
-                    Reset Password
+                  <button type="submit" className="btn-primary" disabled={resettingPassword}>
+                    {resettingPassword ? (
+                      <>
+                        <span className="loading-spinner"></span>
+                        Resetting...
+                      </>
+                    ) : (
+                      'Reset Password'
+                    )}
                   </button>
                 </div>
               </form>
@@ -742,8 +824,15 @@ const Employees = () => {
                 <button type="button" className="btn-secondary" onClick={handleCloseEditModal}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Update Employee
+                <button type="submit" className="btn-primary" disabled={editing}>
+                  {editing ? (
+                    <>
+                      <span className="loading-spinner"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Employee'
+                  )}
                 </button>
               </div>
             </form>
@@ -814,6 +903,25 @@ const Employees = () => {
           </div>
         </div>
       )}
+
+      {/* Alert Modal for Success/Error Messages */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        type={alertModal.type}
+        title={alertModal.title}
+        message={alertModal.message}
+      />
+
+      {/* Confirm Modal for Actions */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm || (() => {})}
+        type={confirmModal.type}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   )
 }
