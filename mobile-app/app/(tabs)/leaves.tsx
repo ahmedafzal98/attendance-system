@@ -163,7 +163,7 @@ export default function LeavesScreen() {
         style={[styles.header, { paddingTop: insets.top + BrandSpacing.md }]}
       >
         <View style={styles.headerContent}>
-          <View>
+          <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>Leave Management</Text>
             <Text style={styles.headerSubtitle}>View and manage your leaves</Text>
           </View>
@@ -346,16 +346,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: BrandSpacing.md,
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginRight: BrandSpacing.sm,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
@@ -367,6 +372,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: BrandSpacing.xs,
+    flexShrink: 0,
   },
   addButtonText: {
     color: '#fff',

@@ -20,9 +20,9 @@ export default function TabLayout() {
           backgroundColor: '#fff',
           borderTopWidth: 1,
           borderTopColor: BrandColors.border,
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 8,
-          height: 60 + Math.max(insets.bottom - 8, 0),
+          paddingBottom: Math.max(insets.bottom, 10),
+          paddingTop: 10,
+          height: 65 + Math.max(insets.bottom, 10),
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -36,12 +36,13 @@ export default function TabLayout() {
           }),
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
           marginBottom: 0,
+          marginTop: 2,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 0,
         },
       }}>
       <Tabs.Screen
