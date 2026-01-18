@@ -231,10 +231,14 @@ const getUserAttendance = async (userId, startDate, endDate) => {
   if (startDate || endDate) {
     query.date = {};
     if (startDate) {
-      query.date.$gte = new Date(startDate);
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Set to beginning of day
+      query.date.$gte = start;
     }
     if (endDate) {
-      query.date.$lte = new Date(endDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Set to end of day
+      query.date.$lte = end;
     }
   }
 

@@ -50,7 +50,13 @@ const Employees = () => {
   }
 
   const fetchTodayAttendanceForAll = async (employeeList) => {
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in YYYY-MM-DD format (local timezone)
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const todayStr = `${year}-${month}-${day}`
+    
     const attendanceMap = {}
     
     try {
@@ -58,14 +64,26 @@ const Employees = () => {
         employeeList.map(async (employee) => {
           try {
             const response = await api.get(
-              `/attendance/user/${employee.id}?startDate=${today}&endDate=${today}`
+              `/attendance/user/${employee.id}?startDate=${todayStr}&endDate=${todayStr}`
             )
-            if (response.data.attendance && response.data.attendance.length > 0) {
-              attendanceMap[employee.id] = response.data.attendance[0]
+            if (response.data && response.data.attendance && response.data.attendance.length > 0) {
+              // Find the attendance record for today
+              const todayAttendance = response.data.attendance.find(att => {
+                const attDate = new Date(att.date)
+                const todayDate = new Date(todayStr)
+                return (
+                  attDate.getFullYear() === todayDate.getFullYear() &&
+                  attDate.getMonth() === todayDate.getMonth() &&
+                  attDate.getDate() === todayDate.getDate()
+                )
+              })
+              if (todayAttendance) {
+                attendanceMap[employee.id] = todayAttendance
+              }
             }
           } catch (err) {
             // Ignore errors for individual employee attendance
-            console.log(`No attendance record for ${employee.name}`)
+            console.log(`No attendance record for ${employee.name}:`, err.response?.data?.error || err.message)
           }
         })
       )
@@ -82,10 +100,10 @@ const Employees = () => {
 
     setProcessingAttendance({ ...processingAttendance, [`checkin_${employeeId}`]: true })
     try {
-      await api.post(`/attendance/admin/checkin/${employeeId}`)
+      const response = await api.post(`/attendance/admin/checkin/${employeeId}`)
       alert(`✓ ${employeeName} checked in successfully!`)
-      // Refresh attendance data
-      await fetchTodayAttendanceForAll(employees)
+      // Refresh employees list and attendance data
+      await fetchEmployees()
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to check in employee')
     } finally {
@@ -100,10 +118,10 @@ const Employees = () => {
 
     setProcessingAttendance({ ...processingAttendance, [`checkout_${employeeId}`]: true })
     try {
-      await api.post(`/attendance/admin/checkout/${employeeId}`)
+      const response = await api.post(`/attendance/admin/checkout/${employeeId}`)
       alert(`✓ ${employeeName} checked out successfully!`)
-      // Refresh attendance data
-      await fetchTodayAttendanceForAll(employees)
+      // Refresh employees list and attendance data
+      await fetchEmployees()
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to check out employee')
     } finally {

@@ -38,17 +38,19 @@ const getEmployeesInOffice = async () => {
     .sort({ 'checkIn.time': 1 })
     .lean();
 
-  // Format the response
-  const employeesInOffice = attendanceRecords.map((record) => ({
-    id: record._id.toString(),
-    userId: record.user._id.toString(),
-    name: record.user.name,
-    email: record.user.email,
-    checkInTime: record.checkIn.time,
-    checkInIP: record.checkIn.ipAddress,
-    status: record.status,
-    workingHours: record.workingHours || 0,
-  }));
+  // Format the response (filter out records with deleted users)
+  const employeesInOffice = attendanceRecords
+    .filter((record) => record.user) // Filter out records with deleted users
+    .map((record) => ({
+      id: record._id.toString(),
+      userId: record.user._id.toString(),
+      name: record.user.name,
+      email: record.user.email,
+      checkInTime: record.checkIn.time,
+      checkInIP: record.checkIn.ipAddress,
+      status: record.status,
+      workingHours: record.workingHours || 0,
+    }));
 
   return employeesInOffice;
 };
@@ -70,35 +72,38 @@ const getTodayAttendanceSummary = async () => {
     .populate('user', 'name email role')
     .lean();
 
+  // Filter out records with deleted users
+  const validTodayAttendance = todayAttendance.filter((a) => a.user);
+
   // Get all employees
   const totalEmployees = await User.countDocuments({ role: 'EMPLOYEE' });
 
   // Get all employee IDs who have attendance records today
   const employeesWithAttendance = new Set(
-    todayAttendance.map((a) => a.user._id.toString())
+    validTodayAttendance.map((a) => a.user._id.toString())
   );
 
-  // Calculate statistics
-  const checkedIn = todayAttendance.filter((a) => a.checkIn?.time).length;
-  const checkedOut = todayAttendance.filter((a) => a.checkOut?.time).length;
-  const inOffice = todayAttendance.filter(
+  // Calculate statistics (using validTodayAttendance to avoid null reference errors)
+  const checkedIn = validTodayAttendance.filter((a) => a.checkIn?.time).length;
+  const checkedOut = validTodayAttendance.filter((a) => a.checkOut?.time).length;
+  const inOffice = validTodayAttendance.filter(
     (a) => a.checkIn?.time && !a.checkOut?.time
   ).length;
-  const present = todayAttendance.filter((a) => a.status === 'PRESENT').length;
-  const late = todayAttendance.filter((a) => a.status === 'LATE').length;
+  const present = validTodayAttendance.filter((a) => a.status === 'PRESENT').length;
+  const late = validTodayAttendance.filter((a) => a.status === 'LATE').length;
   
   // Absent = total employees - employees who checked in OR were marked absent
-  const employeesCheckedInOrMarked = todayAttendance.filter(
+  const employeesCheckedInOrMarked = validTodayAttendance.filter(
     (a) => a.checkIn?.time || a.status === 'ABSENT'
   ).length;
   const absent = totalEmployees - employeesCheckedInOrMarked;
   
-  const halfDay = todayAttendance.filter((a) => a.status === 'HALF_DAY').length;
+  const halfDay = validTodayAttendance.filter((a) => a.status === 'HALF_DAY').length;
 
   // Get all employees who didn't check in today
   const allEmployees = await User.find({ role: 'EMPLOYEE' }).lean();
   const employeesCheckedInIds = new Set(
-    todayAttendance
+    validTodayAttendance
       .filter((a) => a.checkIn?.time)
       .map((a) => a.user._id.toString())
   );
@@ -113,7 +118,7 @@ const getTodayAttendanceSummary = async () => {
     }));
 
   // Get employees marked as absent
-  const markedAbsent = todayAttendance
+  const markedAbsent = validTodayAttendance
     .filter((a) => a.status === 'ABSENT')
     .map((a) => ({
       id: a.user._id.toString(),
@@ -130,7 +135,7 @@ const getTodayAttendanceSummary = async () => {
 
   // Get employees by status
   const byStatus = {
-    PRESENT: todayAttendance
+    PRESENT: validTodayAttendance
       .filter((a) => a.status === 'PRESENT')
       .map((a) => ({
         id: a.user._id.toString(),
@@ -140,7 +145,7 @@ const getTodayAttendanceSummary = async () => {
         checkOutTime: a.checkOut?.time,
         workingHours: a.workingHours || 0,
       })),
-    LATE: todayAttendance
+    LATE: validTodayAttendance
       .filter((a) => a.status === 'LATE')
       .map((a) => ({
         id: a.user._id.toString(),
@@ -151,7 +156,7 @@ const getTodayAttendanceSummary = async () => {
         workingHours: a.workingHours || 0,
       })),
     ABSENT: uniqueAbsent,
-    HALF_DAY: todayAttendance
+    HALF_DAY: validTodayAttendance
       .filter((a) => a.status === 'HALF_DAY')
       .map((a) => ({
         id: a.user._id.toString(),

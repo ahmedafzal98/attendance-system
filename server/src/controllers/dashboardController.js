@@ -18,6 +18,7 @@ const getWhoIsInOffice = async (req, res) => {
       employees,
     });
   } catch (error) {
+    console.error('Error in getWhoIsInOffice:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch employees in office';
     res.status(500).json({ error: errorMessage });
   }
@@ -36,6 +37,7 @@ const getTodaySummary = async (req, res) => {
       ...summary,
     });
   } catch (error) {
+    console.error('Error in getTodaySummary:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch attendance summary';
     res.status(500).json({ error: errorMessage });
   }
