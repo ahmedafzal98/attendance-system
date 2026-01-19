@@ -62,6 +62,7 @@ const createLeaveRequest = async (userId, leaveData) => {
  */
 const getUserLeaves = async (userId, startDate, endDate, status) => {
   const query = { user: userId };
+  console.log('query', query);
 
   if (status) {
     query.status = status;

@@ -166,7 +166,7 @@ const getAllLeaveRequests = async (req, res) => {
     const { startDate, endDate, status, userId } = req.query;
 
     const leaves = await getAllLeaves(startDate, endDate, status, userId);
-
+    console.log('leaves', leaves);
     res.status(200).json({
       message: 'All leave requests',
       leaves: leaves.map((leave) => ({
@@ -189,6 +189,7 @@ const getAllLeaveRequests = async (req, res) => {
       })),
     });
   } catch (error) {
+    console.log('error', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leave requests';
     res.status(500).json({ error: errorMessage });
   }

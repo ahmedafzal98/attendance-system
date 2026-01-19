@@ -26,7 +26,21 @@ const generateToken = (userId, email, role) => {
 };
 
 const verifyToken = (token) => {
-  return jwt.verify(token, JWT_SECRET);
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    // Provide more specific error messages
+    if (error.name === 'JsonWebTokenError') {
+      if (error.message === 'invalid signature') {
+        throw new Error('Token signature is invalid. This usually means the token was signed with a different secret. Please log in again.');
+      }
+      throw new Error('Invalid token. Please log in again.');
+    }
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Token has expired. Please log in again.');
+    }
+    throw error;
+  }
 };
 
 module.exports = {

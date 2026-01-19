@@ -30,7 +30,13 @@ const LeaveManagement = () => {
       }
       setError('')
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch leave requests')
+      // If it's an authentication error, the interceptor will handle redirect
+      // Just show a message briefly before redirect
+      if (err.response?.status === 401) {
+        setError('Authentication failed. Redirecting to login...')
+      } else {
+        setError(err.response?.data?.error || 'Failed to fetch leave requests')
+      }
       setLeaves([])
     } finally {
       setLoading(false)

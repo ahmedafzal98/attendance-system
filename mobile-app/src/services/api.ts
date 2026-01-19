@@ -104,9 +104,11 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Unauthorized - clear token
+      // This includes invalid token signature errors
       try {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
+        console.log('Token cleared due to authentication error');
       } catch (e) {
         console.error('Error clearing storage:', e);
       }

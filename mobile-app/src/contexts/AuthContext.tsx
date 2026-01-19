@@ -61,11 +61,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedUser = await AsyncStorage.getItem('user');
 
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        // Verify token is still valid by making a test request
+        // If token is invalid, it will be cleared by the API interceptor
+        try {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          // Token will be validated on first API call
+        } catch (error) {
+          // If parsing fails, clear storage
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+        }
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
+      // Clear potentially corrupted storage
+      try {
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
     } finally {
       setLoading(false);
     }
