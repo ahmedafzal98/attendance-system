@@ -35,6 +35,7 @@ const Employees = () => {
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchEmployees()
@@ -425,6 +426,16 @@ const Employees = () => {
     )
   }
 
+  // Filter employees based on search term
+  const filteredEmployees = employees.filter((employee) => {
+    if (!searchTerm) return true
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      employee.name.toLowerCase().includes(searchLower) ||
+      employee.email.toLowerCase().includes(searchLower)
+    )
+  })
+
   return (
     <div className="employees-container">
       <div className="employees-header">
@@ -441,12 +452,41 @@ const Employees = () => {
 
       {error && <div className="error-message">{error}</div>}
 
+      {/* Search Bar */}
+      {employees.length > 0 && (
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search employees by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button
+              className="search-clear"
+              onClick={() => setSearchTerm('')}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
+
       {employees.length === 0 ? (
         <div className="empty-state">
           <p>No employees found. Create your first employee account.</p>
         </div>
+      ) : filteredEmployees.length === 0 ? (
+        <div className="empty-state">
+          <p>No employees found matching "{searchTerm}". Try a different search term.</p>
+        </div>
       ) : (
         <div className="employees-table-container">
+          <div className="table-header-info">
+            <span>Showing {filteredEmployees.length} of {employees.length} employees</span>
+          </div>
           <table className="employees-table">
             <thead>
               <tr>
@@ -459,7 +499,7 @@ const Employees = () => {
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee) => {
+              {filteredEmployees.map((employee) => {
                 const statusInfo = getAttendanceStatus(employee.id)
                 const attendance = todayAttendance[employee.id]
                 return (

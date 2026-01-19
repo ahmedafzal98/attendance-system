@@ -73,6 +73,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="attendance-history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size || 24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="apply-leave"
         options={{
           href: null, // Hide from tab bar

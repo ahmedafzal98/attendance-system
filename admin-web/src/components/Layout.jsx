@@ -56,6 +56,12 @@ const Layout = () => {
               Employees
             </Link>
             <Link
+              to="/attendance-history"
+              className={location.pathname === '/attendance-history' ? 'active' : ''}
+            >
+              Attendance History
+            </Link>
+            <Link
               to="/ip-configuration"
               className={location.pathname === '/ip-configuration' ? 'active' : ''}
             >

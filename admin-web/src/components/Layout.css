@@ -140,6 +140,11 @@
   font-size: 18px;
 }
 
+.sidebar-nav a[href*="attendance-history"]::before {
+  content: '📋';
+  font-size: 18px;
+}
+
 .sidebar-nav a[href*="ip-configuration"]::before {
   content: '🌐';
   font-size: 18px;

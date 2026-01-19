@@ -408,6 +408,26 @@ export default function ApplyLeaveScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Error Modal */}
+      <AlertModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal({ visible: false, message: '' })}
+        type="error"
+        title="Error"
+        message={errorModal.message}
+        showRemarks={false}
+      />
+
+      {/* Success Modal */}
+      <AlertModal
+        visible={successModal.visible}
+        onClose={handleSuccessModalClose}
+        type="success"
+        title="Success"
+        message={successModal.message}
+        showRemarks={false}
+      />
     </ScrollView>
   );
 }

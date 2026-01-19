@@ -1,6 +1,7 @@
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const WorkSchedule = require('../models/WorkSchedule');
+const { isWithinOfficeHours, getOfficeHoursMessage } = require('../utils/officeTiming');
 
 /**
  * Get today's date at midnight for comparison
@@ -60,6 +61,13 @@ const hasCheckedOutToday = async (userId) => {
  * Check in employee
  */
 const checkIn = async (userId, ipAddress) => {
+  const checkInTime = new Date();
+  
+  // Validate office hours (9pm to 6am)
+  if (!isWithinOfficeHours(checkInTime)) {
+    throw new Error(getOfficeHoursMessage());
+  }
+
   const todayStart = getTodayStart();
   const todayEnd = getTodayEnd();
 
@@ -75,8 +83,6 @@ const checkIn = async (userId, ipAddress) => {
   if (existingAttendance && existingAttendance.checkIn?.time) {
     throw new Error('You have already checked in today');
   }
-
-  const checkInTime = new Date();
   
   // Get employee's work schedule
   let workSchedule = await WorkSchedule.findOne({ user: userId, isActive: true });
@@ -156,6 +162,13 @@ const checkIn = async (userId, ipAddress) => {
  * Check out employee
  */
 const checkOut = async (userId, ipAddress) => {
+  const checkOutTime = new Date();
+  
+  // Validate office hours (9pm to 6am)
+  if (!isWithinOfficeHours(checkOutTime)) {
+    throw new Error(getOfficeHoursMessage());
+  }
+
   const todayStart = getTodayStart();
   const todayEnd = getTodayEnd();
 
@@ -179,8 +192,6 @@ const checkOut = async (userId, ipAddress) => {
   if (attendance.checkOut?.time) {
     throw new Error('You have already checked out today');
   }
-
-  const checkOutTime = new Date();
   const checkInTime = attendance.checkIn.time;
 
   // Calculate working hours in minutes
@@ -312,8 +323,9 @@ const markAbsent = async (userId, date, notes) => {
 };
 
 /**
- * Manual check in employee (admin bypasses IP validation)
+ * Manual check in employee (admin bypasses IP validation and office hours)
  * Used when employee has issues with mobile app (slow internet, app crash, etc.)
+ * Note: This function bypasses office hours validation as it's an admin override
  */
 const manualCheckIn = async (userId, adminId) => {
   const todayStart = getTodayStart();
@@ -404,8 +416,9 @@ const manualCheckIn = async (userId, adminId) => {
 };
 
 /**
- * Manual check out employee (admin bypasses IP validation)
+ * Manual check out employee (admin bypasses IP validation and office hours)
  * Used when employee has issues with mobile app
+ * Note: This function bypasses office hours validation as it's an admin override
  */
 const manualCheckOut = async (userId, adminId) => {
   const todayStart = getTodayStart();
