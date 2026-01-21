@@ -61,14 +61,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedUser = await AsyncStorage.getItem('user');
 
       if (storedToken && storedUser) {
-        // Verify token is still valid by making a test request
-        // If token is invalid, it will be cleared by the API interceptor
         try {
+          const user = JSON.parse(storedUser);
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-          // Token will be validated on first API call
+          setUser(user);
+          
+          // Validate token by making a lightweight API call
+          // This will trigger the interceptor to clear token if invalid
+          try {
+            await api.get('/attendance/today');
+            // Token is valid, user is already set
+          } catch (error: any) {
+            // Token validation failed (401 will be handled by interceptor)
+            // If it's not a 401, it's a different error, but token might still be valid
+            if (error.response?.status === 401) {
+              // Token is invalid, interceptor already cleared it
+              setUser(null);
+              setToken(null);
+            }
+          }
         } catch (error) {
           // If parsing fails, clear storage
+          console.error('Error parsing stored user:', error);
           await AsyncStorage.removeItem('token');
           await AsyncStorage.removeItem('user');
         }

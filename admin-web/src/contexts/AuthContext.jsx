@@ -17,16 +17,47 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (token) {
-      // Verify token by getting user info
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      // Token is already set, user will be loaded from localStorage or API call
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
-        setUser(JSON.parse(storedUser))
+    const validateToken = async () => {
+      if (token) {
+        // Token is loaded from localStorage, user will be loaded from localStorage
+        // The API interceptor will add the token to requests dynamically
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser)
+            setUser(user)
+            
+            // Validate token by making a lightweight API call
+            // This will trigger the interceptor to clear token if invalid
+            try {
+              await api.get('/attendance/today')
+              // Token is valid, user is already set
+            } catch (error) {
+              // Token validation failed (401 will be handled by interceptor)
+              // If it's not a 401, it's a different error, but token might still be valid
+              if (error.response?.status === 401) {
+                // Token is invalid, interceptor already cleared it
+                setUser(null)
+                setToken(null)
+              }
+            }
+          } catch (error) {
+            console.error('Error parsing stored user:', error)
+            // Clear corrupted data
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+            setToken(null)
+          }
+        } else {
+          // No user data, clear token
+          localStorage.removeItem('token')
+          setToken(null)
+        }
       }
+      setLoading(false)
     }
-    setLoading(false)
+    
+    validateToken()
   }, [token])
 
   const login = async (email, password) => {
@@ -38,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       setToken(token)
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user))
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      // No need to set api.defaults.headers.common - the interceptor handles it dynamically
 
       return { success: true }
     } catch (error) {
@@ -54,7 +85,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    delete api.defaults.headers.common['Authorization']
+    // No need to delete api.defaults.headers.common - interceptor handles it dynamically
   }
 
   const value = {
