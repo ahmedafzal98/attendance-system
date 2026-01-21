@@ -16,8 +16,11 @@ const checkInEmployee = async (req, res) => {
   try {
     const userId = req.user.id;
     const ipAddress = req.clientIP;
+    // Accept client's local time for office hours validation (optional)
+    // Format: ISO string or timestamp
+    const clientTime = req.body.clientTime ? new Date(req.body.clientTime) : null;
 
-    const attendance = await checkIn(userId, ipAddress);
+    const attendance = await checkIn(userId, ipAddress, clientTime);
 
     res.status(200).json({
       message: 'Checked in successfully',
@@ -40,8 +43,10 @@ const checkOutEmployee = async (req, res) => {
   try {
     const userId = req.user.id;
     const ipAddress = req.clientIP;
+    // Accept client's local time for office hours validation (optional)
+    const clientTime = req.body.clientTime ? new Date(req.body.clientTime) : null;
 
-    const attendance = await checkOut(userId, ipAddress);
+    const attendance = await checkOut(userId, ipAddress, clientTime);
 
     res.status(200).json({
       message: 'Checked out successfully',

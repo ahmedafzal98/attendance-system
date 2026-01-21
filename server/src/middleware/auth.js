@@ -11,8 +11,6 @@ const authenticate = (req, res, next) => {
     
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const decoded = verifyToken(token);
-
-    console.log("Authenticate decoded",decoded);
     
     req.user = {
       id: decoded.userId,

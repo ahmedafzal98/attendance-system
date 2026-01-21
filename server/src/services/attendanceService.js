@@ -59,12 +59,23 @@ const hasCheckedOutToday = async (userId) => {
 
 /**
  * Check in employee
+ * @param {string} userId - User ID
+ * @param {string} ipAddress - IP address
+ * @param {Date} clientTime - Optional client's local time for validation (defaults to server time)
  */
-const checkIn = async (userId, ipAddress) => {
+const checkIn = async (userId, ipAddress, clientTime = null) => {
+  // Use server time for recording check-in
   const checkInTime = new Date();
   
-  // Validate office hours (9pm to 6am)
-  if (!isWithinOfficeHours(checkInTime)) {
+  // Use client's local time for office hours validation (if provided)
+  // This ensures office hours are checked against user's local time, not server UTC time
+  const validationTime = clientTime || checkInTime;
+  const currentHour = validationTime.getHours();
+  const isWithinHours = isWithinOfficeHours(validationTime);
+  console.log(`[Check-In] Validation time: ${validationTime.toISOString()}, Local hour: ${currentHour}, Within office hours: ${isWithinHours}`);
+  console.log(`[Check-In] Server time (recorded): ${checkInTime.toISOString()}, Client time provided: ${clientTime ? clientTime.toISOString() : 'none'}`);
+  
+  if (!isWithinHours) {
     throw new Error(getOfficeHoursMessage());
   }
 
@@ -160,12 +171,22 @@ const checkIn = async (userId, ipAddress) => {
 
 /**
  * Check out employee
+ * @param {string} userId - User ID
+ * @param {string} ipAddress - IP address
+ * @param {Date} clientTime - Optional client's local time for validation (defaults to server time)
  */
-const checkOut = async (userId, ipAddress) => {
+const checkOut = async (userId, ipAddress, clientTime = null) => {
+  // Use server time for recording check-out
   const checkOutTime = new Date();
   
-  // Validate office hours (9pm to 6am)
-  if (!isWithinOfficeHours(checkOutTime)) {
+  // Use client's local time for office hours validation (if provided)
+  const validationTime = clientTime || checkOutTime;
+  const currentHour = validationTime.getHours();
+  const isWithinHours = isWithinOfficeHours(validationTime);
+  console.log(`[Check-Out] Validation time: ${validationTime.toISOString()}, Local hour: ${currentHour}, Within office hours: ${isWithinHours}`);
+  console.log(`[Check-Out] Server time (recorded): ${checkOutTime.toISOString()}, Client time provided: ${clientTime ? clientTime.toISOString() : 'none'}`);
+  
+  if (!isWithinHours) {
     throw new Error(getOfficeHoursMessage());
   }
 

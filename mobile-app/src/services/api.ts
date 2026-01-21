@@ -26,11 +26,117 @@ if (!API_BASE_URL || (__DEV__ && API_BASE_URL.includes('192.168.1.100'))) {
 }
 
 /**
+ * Get local IP address using WebRTC (for web browsers)
+ * This works by creating a temporary RTCPeerConnection to discover local IPs
+ */
+const getLocalIPAddressWebRTC = (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || typeof RTCPeerConnection === 'undefined') {
+      resolve(null);
+      return;
+    }
+
+    const RTCPeerConnection = window.RTCPeerConnection || 
+      (window as any).webkitRTCPeerConnection || 
+      (window as any).mozRTCPeerConnection;
+
+    if (!RTCPeerConnection) {
+      resolve(null);
+      return;
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    const ips: string[] = [];
+    
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        const candidate = event.candidate.candidate;
+        // Match IPv4 addresses in candidate string
+        const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+        if (match) {
+          const ip = match[1];
+          // Filter out public IPs and localhost, keep only private IPs
+          if (ip.startsWith('192.168.') || 
+              ip.startsWith('10.') || 
+              ip.startsWith('172.16.') || 
+              ip.startsWith('172.17.') || 
+              ip.startsWith('172.18.') || 
+              ip.startsWith('172.19.') || 
+              ip.startsWith('172.20.') || 
+              ip.startsWith('172.21.') || 
+              ip.startsWith('172.22.') || 
+              ip.startsWith('172.23.') || 
+              ip.startsWith('172.24.') || 
+              ip.startsWith('172.25.') || 
+              ip.startsWith('172.26.') || 
+              ip.startsWith('172.27.') || 
+              ip.startsWith('172.28.') || 
+              ip.startsWith('172.29.') || 
+              ip.startsWith('172.30.') || 
+              ip.startsWith('172.31.')) {
+            if (!ips.includes(ip)) {
+              ips.push(ip);
+            }
+          }
+        }
+      } else {
+        // No more candidates
+        pc.close();
+        if (ips.length > 0) {
+          console.log('Detected private IP via WebRTC:', ips[0]);
+          resolve(ips[0]);
+        } else {
+          console.warn('No private IP found via WebRTC');
+          resolve(null);
+        }
+      }
+    };
+
+    // Create a dummy data channel to trigger candidate gathering
+    pc.createDataChannel('');
+
+    // Create an offer to start ICE candidate gathering
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .catch(err => {
+        console.error('Error creating WebRTC offer:', err);
+        pc.close();
+        resolve(null);
+      });
+
+    // Timeout after 3 seconds
+    setTimeout(() => {
+      pc.close();
+      if (ips.length > 0) {
+        console.log('Detected private IP via WebRTC (timeout):', ips[0]);
+        resolve(ips[0]);
+      } else {
+        console.warn('WebRTC IP detection timed out');
+        resolve(null);
+      }
+    }, 3000);
+  });
+};
+
+/**
  * Get local IP address (private WiFi IP)
  * This is used for office WiFi validation
+ * - On mobile: Uses expo-network
+ * - On web: Uses WebRTC
  */
 const getLocalIPAddress = async (): Promise<string | null> => {
   try {
+    // Check if we're on web platform
+    if (typeof window !== 'undefined' && typeof RTCPeerConnection !== 'undefined') {
+      // Use WebRTC for web browsers
+      return await getLocalIPAddressWebRTC();
+    }
+
+    // Use expo-network for mobile platforms
     if (!Network) {
       console.warn('expo-network not available. Private IP detection disabled.');
       return null;
